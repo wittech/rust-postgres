@@ -165,6 +165,7 @@ pub struct Config {
     pub(crate) target_session_attrs: TargetSessionAttrs,
     pub(crate) channel_binding: ChannelBinding,
     pub(crate) pgbouncer_mode: bool,
+    pub(crate) search_path: Option<String>,
 }
 
 impl Default for Config {
@@ -196,6 +197,7 @@ impl Config {
             target_session_attrs: TargetSessionAttrs::Any,
             channel_binding: ChannelBinding::Prefer,
             pgbouncer_mode: false,
+            search_path: None,
         }
     }
 
@@ -439,6 +441,17 @@ impl Config {
     /// Gets the pgBouncer mode status.
     pub fn get_pgbouncer_mode(&self) -> bool {
         self.pgbouncer_mode
+    }
+
+    /// Sets the search_path.
+    pub fn search_path(&mut self, search_path: String) -> &mut Config {
+        self.search_path = Some(search_path);
+        self
+    }
+
+    /// Gets the search path.
+    pub fn get_search_path(&self) -> Option<&String> {
+        self.search_path.as_ref()
     }
 
     fn param(&mut self, key: &str, value: &str) -> Result<(), Error> {
