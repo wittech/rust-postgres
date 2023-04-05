@@ -131,6 +131,10 @@ where
         params.push(("application_name", &**application_name));
     }
 
+    if let Some(schema_path) = &config.search_path {
+        params.push(("search_path", &**schema_path));
+    }
+
     let mut buf = BytesMut::new();
     frontend::startup_message(params, &mut buf).map_err(Error::encode)?;
 
