@@ -154,8 +154,9 @@ async fn get_type(client: &Arc<InnerClient>, oid: Oid) -> Result<Type, Error> {
     let relid: Oid = row.try_get(6)?;
 
     let kind = if type_ == b'e' as i8 {
-        let variants = get_enum_variants(client, oid).await?;
-        Kind::Enum(variants)
+        // Note: Quaint is not using the variants information at any time.
+        // Therefore, we're saving a roundtrip per enums by not fetching that information anymore.
+        Kind::Enum
     } else if type_ == b'p' as i8 {
         Kind::Pseudo
     } else if basetype != 0 {
@@ -189,9 +190,11 @@ fn get_type_rec<'a>(
 
 async fn typeinfo_statement(client: &Arc<InnerClient>) -> Result<Statement, Error> {
     if let Some(stmt) = client.typeinfo() {
+        dbg!("typeinfo stmt cache hit");
         return Ok(stmt);
     }
 
+    dbg!("prepare typeinfo query");
     let stmt = match prepare_rec(client, TYPEINFO_QUERY, &[]).await {
         Ok(stmt) => stmt,
         Err(ref e) if e.code() == Some(&SqlState::UNDEFINED_TABLE) => {
@@ -200,6 +203,9 @@ async fn typeinfo_statement(client: &Arc<InnerClient>) -> Result<Statement, Erro
         Err(e) => return Err(e),
     };
 
+    dbg!(&stmt.params());
+    dbg!(&stmt.columns());
+
     client.set_typeinfo(&stmt);
     Ok(stmt)
 }
@@ -207,6 +213,7 @@ async fn typeinfo_statement(client: &Arc<InnerClient>) -> Result<Statement, Erro
 async fn get_enum_variants(client: &Arc<InnerClient>, oid: Oid) -> Result<Vec<String>, Error> {
     let stmt = typeinfo_enum_statement(client).await?;
 
+    dbg!("run enum variants query");
     query::query(client, stmt, slice_iter(&[&oid]))
         .await?
         .and_then(|row| async move { row.try_get(0) })
@@ -216,9 +223,11 @@ async fn get_enum_variants(client: &Arc<InnerClient>, oid: Oid) -> Result<Vec<St
 
 async fn typeinfo_enum_statement(client: &Arc<InnerClient>) -> Result<Statement, Error> {
     if let Some(stmt) = client.typeinfo_enum() {
+        dbg!("enum variants stmt cache hit");
         return Ok(stmt);
     }
 
+    dbg!("prepare typeinfo enum query");
     let stmt = match prepare_rec(client, TYPEINFO_ENUM_QUERY, &[]).await {
         Ok(stmt) => stmt,
         Err(ref e) if e.code() == Some(&SqlState::UNDEFINED_COLUMN) => {
@@ -226,6 +235,9 @@ async fn typeinfo_enum_statement(client: &Arc<InnerClient>) -> Result<Statement,
         }
         Err(e) => return Err(e),
     };
+
+    dbg!(&stmt.params());
+    dbg!(&stmt.columns());
 
     client.set_typeinfo_enum(&stmt);
     Ok(stmt)
