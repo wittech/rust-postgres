@@ -587,16 +587,9 @@ async fn enum_() {
 
     let stmt = client.prepare("SELECT $1::mood").await.unwrap();
     let type_ = &stmt.params()[0];
+
     assert_eq!(type_.name(), "mood");
-    match *type_.kind() {
-        Kind::Enum(ref variants) => {
-            assert_eq!(
-                variants,
-                &["sad".to_owned(), "ok".to_owned(), "happy".to_owned()]
-            );
-        }
-        _ => panic!("bad type"),
-    }
+    assert_eq!(&Kind::Enum, type_.kind());
 }
 
 #[tokio::test]

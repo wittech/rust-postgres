@@ -154,8 +154,9 @@ async fn get_type(client: &Arc<InnerClient>, oid: Oid) -> Result<Type, Error> {
     let relid: Oid = row.try_get(6)?;
 
     let kind = if type_ == b'e' as i8 {
-        let variants = get_enum_variants(client, oid).await?;
-        Kind::Enum(variants)
+        // Note: Quaint is not using the variants information at any time.
+        // Therefore, we're saving a roundtrip per enums by not fetching that information anymore.
+        Kind::Enum
     } else if type_ == b'p' as i8 {
         Kind::Pseudo
     } else if basetype != 0 {
@@ -204,6 +205,7 @@ async fn typeinfo_statement(client: &Arc<InnerClient>) -> Result<Statement, Erro
     Ok(stmt)
 }
 
+#[allow(dead_code)]
 async fn get_enum_variants(client: &Arc<InnerClient>, oid: Oid) -> Result<Vec<String>, Error> {
     let stmt = typeinfo_enum_statement(client).await?;
 
@@ -214,6 +216,7 @@ async fn get_enum_variants(client: &Arc<InnerClient>, oid: Oid) -> Result<Vec<St
         .await
 }
 
+#[allow(dead_code)]
 async fn typeinfo_enum_statement(client: &Arc<InnerClient>) -> Result<Statement, Error> {
     if let Some(stmt) = client.typeinfo_enum() {
         return Ok(stmt);
