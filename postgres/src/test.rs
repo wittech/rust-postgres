@@ -12,6 +12,21 @@ use crate::binary_copy::{BinaryCopyInWriter, BinaryCopyOutIter};
 use fallible_iterator::FallibleIterator;
 
 #[test]
+fn insert() {
+    let full_sql = "INSERT INTO \"public\".\"user\" (\"id\",\"email\",\"deleted\",\"createdAt\") VALUES ('edbe0722f5bf40d7a2602cbf4ab5d943', 'Rowena.Wiza@yahoo.com', false, null) RETURNING \"public\".\"user\".\"id\", \"public\".\"user\".\"email\", \"public\".\"user\".\"deleted\", \"public\".\"user\".\"createdAt\"";
+    // let conn = Quaint::new("postgres://root:root@localhost:3307/demo_ds").await?;
+    let mut client = Client::connect("host=localhost port=3307 dbname=demo_ds user=root password=root", NoTls).unwrap();
+    let stmt = client.prepare(full_sql).unwrap();
+    let rows = client.query(&stmt, &[]).unwrap();
+    assert_eq!(rows.len(), 1);
+    let id = rows[0].get::<_, &str>(0);
+    // let email = rows[0].get::<_, &str>(1);
+    // rows[0].get(idx)
+    let deleted = rows[0].get::<_, bool>(2);
+    println!("ok");
+}
+
+#[test]
 fn prepare() {
     let mut client = Client::connect("host=localhost port=5433 user=postgres", NoTls).unwrap();
 
